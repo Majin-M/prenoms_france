@@ -35,3 +35,60 @@ models:
           (entre 0 et 1). Légèrement surestimée, car les prénoms trop rares ne sont pas dans le fichier.
         tests:
           - not_null
+
+  - name: mart_diversite_prenoms_par_annee
+    description: >
+      Indicateurs de diversité des prénoms par année et par sexe, au niveau France.
+      Sous-estiment la diversité réelle, car les prénoms trop rares ne sont pas dans le fichier.
+    columns:
+      - name: annee
+        tests:
+          - not_null
+      - name: sexe
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["M", "F"]
+      - name: nombre_prenoms
+        description: Nombre de prénoms distincts publiés pour l'année et le sexe.
+        tests:
+          - not_null
+      - name: nombre_naissances
+        description: Naissances recensées dans le fichier pour l'année et le sexe.
+        tests:
+          - not_null
+      - name: part_top_10
+        description: Part des naissances portée par les 10 prénoms les plus donnés (entre 0 et 1).
+        tests:
+          - not_null
+      - name: nombre_prenoms_moitie_naissances
+        description: Nombre minimal de prénoms, pris du plus au moins donné, pour couvrir la moitié des naissances.
+        tests:
+          - not_null
+      - name: nombre_effectif_prenoms
+        description: >
+          Inverse de l'indice de Simpson (1 / somme des parts au carré) : nombre de prénoms qui,
+          donnés à parts égales, produiraient la même concentration.
+        tests:
+          - not_null
+
+  - name: mart_ecart_regions_france
+    description: >
+      Écart annuel entre le total France et la somme des régions, tous sexes confondus.
+      Les prénoms trop rares dans chaque région n'y sont pas publiés.
+    columns:
+      - name: annee
+        tests:
+          - not_null
+          - unique
+      - name: nombre_naissances_france
+        tests:
+          - not_null
+      - name: nombre_naissances_regions
+        tests:
+          - not_null
+      - name: part_ecart
+        description: Part des naissances du total France absentes de la somme des régions (entre 0 et 1).
+        tests:
+          - not_null

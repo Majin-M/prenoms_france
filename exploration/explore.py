@@ -5,7 +5,8 @@ Exploration : Fichier des prénoms INSEE
 Objectif :
     Requêtes d'exploration lancées sur le fichier Parquet avant d'écrire le
     pipeline : schéma, volumes, doublons, valeurs atypiques. Les constats
-    sont résumés dans la section « Limites des données » du README.
+    sont détaillés dans NOTES.md et résumés dans la section « Limites des
+    données » du README.
 
 Utilisation :
     python exploration/explore.py   (après python ingest.py)

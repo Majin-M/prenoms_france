@@ -12,6 +12,7 @@ models:
               arguments:
                 values: ["M", "F"]
       - name: prenom
+        description: Prénom en majuscules, tel que publié par l'INSEE (accents et apostrophes conservés).
         tests:
           - not_null
       - name: annee
@@ -22,6 +23,8 @@ models:
         description: Nombre de naissances, arrondi à un multiple de 5 par l'INSEE (minimum 5).
         tests:
           - not_null
+      - name: rang
+        description: Rang du prénom pour l'année, le sexe et la zone, calculé par l'INSEE (1 = le plus donné).
       - name: niveau_geo
         description: Niveau géographique. Une zone s'identifie par niveau_geo + geo_code.
         tests:

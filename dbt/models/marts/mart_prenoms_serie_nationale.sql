@@ -18,6 +18,8 @@ Attention :
     fichier des prénoms (même année, même sexe), pas sur toutes les
     naissances : elle est légèrement surestimée, surtout les années
     récentes (7,8 % des naissances absentes du fichier en 2020).
+    Avant 2012, le niveau France exclut Mayotte : un prénom surtout donné à
+    Mayotte peut apparaître en 2012 sans être nouveau.
 =============================================================================
 */
 
@@ -28,7 +30,7 @@ with national as (
 ),
 
 annees as (
-    select unnest(range(1900, {{ var('derniere_annee') }} + 1)) as annee
+    select cast(unnest(range(1900, {{ var('derniere_annee') }} + 1)) as integer) as annee
 ),
 
 prenoms as (

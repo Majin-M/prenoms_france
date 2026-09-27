@@ -14,7 +14,7 @@ Règles de nommage des schémas, tables, colonnes et scripts du projet.
 | Schéma | Contenu | Alimenté par |
 |---|---|---|
 | `raw` | Données source telles quelles | `ingest.py` |
-| `staging` | Données nettoyées et typées, une table par source | dbt |
+| `staging` | Données nettoyées et typées, un modèle par source | dbt |
 | `marts` | Tables prêtes pour l'analyse | dbt |
 
 ## Tables
@@ -27,14 +27,14 @@ Règles de nommage des schémas, tables, colonnes et scripts du projet.
 
 ### `staging`
 
-- **`stg_<source>__<entité>`**, avec un double underscore entre la source et l'entité, selon la convention dbt.
+- **`stg_<source>__<entité>`**, matérialisé en vue, avec un double underscore entre la source et l'entité, selon la convention dbt.
 - C'est ici que les colonnes sont renommées et typées. Par exemple, `periode` (texte) devient `annee` (entier) et `valeur` devient `nombre_naissances`.
 - Exemple : `staging.stg_insee__prenoms`.
 
 ### `marts`
 
 - **`mart_<sujet>`** : un nom qui dit à quelle question la table répond.
-- Exemple : `marts.mart_prenoms_par_annee`.
+- Exemples : `marts.mart_prenoms_serie_nationale`, `marts.mart_diversite_prenoms_par_annee`.
 
 ## Colonnes
 
@@ -48,16 +48,23 @@ Règles de nommage des schémas, tables, colonnes et scripts du projet.
 | `_loaded_at` | `TIMESTAMP WITH TIME ZONE` | Date et heure du chargement dans `raw` |
 | `_source_sha256` | `VARCHAR` | Empreinte sha256 du fichier source chargé |
 
-### Suffixes
+### Préfixes et suffixes
 
-| Suffixe | Signification | Exemple |
+| Préfixe ou suffixe | Signification | Exemple |
 |---|---|---|
-| `_at` | Horodatage | `_loaded_at` |
-| `_code` | Code officiel | `departement_code` |
+| `_at` (suffixe) | Horodatage | `_loaded_at` |
+| `_code` (suffixe) | Code officiel | `geo_code` |
 | `nombre_` (préfixe) | Comptage | `nombre_naissances` |
+| `part_` (préfixe) | Proportion, entre 0 et 1 | `part_naissances` |
+| `est_` (préfixe) | Booléen | `est_publie` |
+
+## Tests dbt
+
+- Tests singuliers : **`assert_<règle vérifiée>`**, dans `dbt/tests/`. Le nom dit ce qui doit être vrai : `assert_naissances_multiples_de_5`.
+- Chaque fichier commence par un commentaire qui cite le constat d'exploration à l'origine du test.
 
 ## Scripts Python
 
-- Un script par étape du pipeline, nommé d'après son rôle : `ingest.py`, `explore.py`.
+- Un script par étape du pipeline, nommé d'après son rôle : `ingest.py`, `export.py`, `explore.py`. `run.ps1` les enchaîne avec dbt.
 - Les fonctions portent un verbe à l'infinitif : `telecharger`, `verifier_schema`, `charger`.
 - Les constantes de configuration sont en majuscules en haut du fichier : `URL`, `PARQUET`, `DB`.

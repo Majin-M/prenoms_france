@@ -1,6 +1,6 @@
 # Notes d'exploration
 
-Constats tirés de [exploration/explore.py](exploration/explore.py) sur le fichier `prenoms-2025.parquet` (édition juillet 2026).
+Constats tirés de [exploration/explore.py](exploration/explore.py) sur le fichier `prenoms-2025.parquet` (édition juillet 2026), complétés par des requêtes sur les modèles dbt pour l'écart régions / France et Mayotte.
 
 ## Constats
 
@@ -14,6 +14,7 @@ Constats tirés de [exploration/explore.py](exploration/explore.py) sur le fichi
 - **2020 : 677 665 naissances dans le fichier, contre 735 186 selon l'INSEE (France).** Il manque 57 521 naissances, soit 7,8 %, environ une sur treize.
 - **La somme des régions est toujours inférieure au total France**, par année et par sexe, sur les 252 couples (année, sexe). L'écart moyen passe de 1,1 % dans les années 1900 à 2,5 % dans les années 1970, 6,1 % dans les années 2000 et 10,0 % dans les années 2020, avec un maximum de 11,6 % (filles, 2024). Surveillé par le test `assert_regions_coherentes_avec_france` (avertissement au-delà de 15 %).
 - **Une zone = `niveau_geographique` + `geographie`.** `11` désigne l'Île-de-France au niveau REG et l'Aude au niveau DEP ; `01` désigne la Guadeloupe ou l'Ain.
+- **Le périmètre change en 2012 : Mayotte entre dans le fichier.** D'après la page INSEE, les données d'avant 2012 couvrent la France hors Mayotte. Mayotte (`DEP 976`, `REG 06`) n'a de lignes qu'à partir de 2012 ; ce sont les deux seules zones dont la série ne commence pas en 1900. Ses naissances pèsent peu dans le total France (0,37 % en 2012, 0,68 % en 2025), mais elle apporte des prénoms rares ailleurs : chaque année, 110 à 170 prénoms par sexe publiés au niveau France n'apparaissent, au niveau départemental, qu'à Mayotte (1,4 % à 2,2 % de `nombre_prenoms`). En 2012, `nombre_prenoms` augmente de 295 (filles) et 222 (garçons), une hausse qui se fond dans la tendance (+525 et +414 en 2010). Ce décompte est approximatif : un prénom peut avoir quelques naissances ailleurs, sous le seuil de diffusion. Surveillé par le test `assert_couverture_zones`.
 - Prénoms avec apostrophe (92 prénoms distincts, dont `A'LIA`, le premier par ordre alphabétique) et caractères non français (`ÜMMÜ`). Les requêtes doivent être paramétrées, jamais construites par concaténation.
 
 ## Décisions de modélisation
@@ -21,18 +22,19 @@ Constats tirés de [exploration/explore.py](exploration/explore.py) sur le fichi
 | Sujet | Décision | Statut |
 |---|---|---|
 | Années sans ligne | Compléter par 0 dans le mart `mart_prenoms_serie_nationale` (colonne `est_publie` pour distinguer un 0 complété d'une ligne publiée) | Décidé |
-| Clé d'une zone | Toujours joindre sur `niveau_geographique` + `geographie` | Décidé |
+| Clé d'une zone | Toujours joindre sur `niveau_geographique` + `geographie` (`niveau_geo` + `geo_code` dans le staging) | Décidé |
 | Part de naissances | Colonne `part_naissances` du mart : `nombre_naissances` / total du fichier pour la même année et le même sexe. Affichée avec la mention « part parmi les naissances recensées dans le fichier des prénoms ». Légèrement surestimée, surtout les années récentes | Décidé |
-| Export vers le site | Le mart reste complet (89 % de zéros complétés) pour l'analyse en SQL ; l'export n'envoie que les lignes `est_publie`, le site complète les années manquantes par 0 | Décidé |
+| Export vers le portfolio | Le mart reste complet (89 % de zéros complétés) pour l'analyse en SQL ; l'export n'envoie que les lignes `est_publie`, le portfolio complète les années manquantes par 0 | Décidé |
+| Mayotte avant 2012 | Ne jamais compléter par 0 une série de Mayotte avant 2012 : ces années ne sont pas couvertes, ce n'est pas une absence de naissances. Les graphiques de diversité et de totaux signalent le changement de périmètre en 2012 | Décidé |
 
 ## Interprétations
 
 - **Écart régions / France : les prénoms trop rares au niveau régional ne sont pas publiés.** Un prénom assez fréquent en France pour être diffusé peut être sous le seuil dans chaque région : il compte alors pour la France et pour aucune région. L'arrondi à 5 ne suffit pas à l'expliquer, car il ferait varier l'écart dans les deux sens, alors qu'il va toujours dans le même sens. L'écart grandit avec la diversité des prénoms. Explication fortement appuyée, mais non prouvée directement : les données sous le seuil ne sont pas accessibles.
+- **Les indicateurs de diversité sous-estiment la variété réelle des prénoms**, puisque les prénoms les plus rares ne sont pas comptés. Le sens de l'écart est certain, son ampleur inconnue.
 
 ## Hypothèses à vérifier
 
 - **La part des naissances absentes augmente avec le temps.** Les parents choisissent des prénoms de plus en plus variés depuis les années 1970, donc davantage d'enfants portent un prénom trop rare pour figurer dans le fichier. Pour le vérifier, il faut refaire le calcul de 2020 sur 1950, 1980 et 2000, avec les totaux de naissances publiés par l'INSEE.
-- **L'indicateur de diversité sous-estime la variété réelle des prénoms**, puisque les prénoms les plus rares ne sont pas comptés.
 
 ## Pistes d'amélioration
 
