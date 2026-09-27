@@ -12,7 +12,7 @@ Le projet met en pratique :
 
 - une couche `raw` fidèle à la source et traçable ;
 - des transformations SQL versionnées, documentées et testées ;
-- des limites des données mesurées et écrites, plutôt que cachées ;
+- des limites des données mesurées et écrites;
 - un pipeline qui se relance en une commande.
 
 ## Démarrage rapide
