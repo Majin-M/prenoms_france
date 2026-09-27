@@ -1,5 +1,26 @@
+"""
+=============================================================================
+Exploration : Fichier des prénoms INSEE
+=============================================================================
+Objectif :
+    Requêtes d'exploration lancées sur le fichier Parquet avant d'écrire le
+    pipeline : schéma, volumes, doublons, valeurs atypiques. Les constats
+    sont résumés dans la section « Limites des données » du README.
+
+Utilisation :
+    python exploration/explore.py   (après python ingest.py)
+
+Attention :
+    Script de travail, en lecture seule : il ne modifie ni le fichier source
+    ni la base DuckDB.
+=============================================================================
+"""
+
+from pathlib import Path
+
 import duckdb
-f="data/prenoms-2025.parquet"
+
+f = (Path(__file__).resolve().parent.parent / "data" / "prenoms-2025.parquet").as_posix()
 print(duckdb.sql(f"DESCRIBE SELECT * FROM '{f}'"))
 print(duckdb.sql(f"SELECT * FROM'{f}' LIMIT 10"))
 print(duckdb.sql(f"""

@@ -5,3 +5,4 @@ dbt/logs/
 __pycache__/
 *.egg-info/
 .venv/
+logs/
