@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: mart_prenoms_serie_nationale
+    description: >
+      Série annuelle de chaque prénom au niveau France, de 1900 à la dernière année publiée,
+      complétée par 0 les années où le prénom est absent du fichier.
+    columns:
+      - name: prenom
+        tests:
+          - not_null
+      - name: sexe
+        description: M ou F
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["M", "F"]
+      - name: annee
+        tests:
+          - not_null
+      - name: nombre_naissances
+        description: Naissances publiées par l'INSEE ; 0 = absent du fichier (aucune naissance ou sous le seuil de diffusion).
+        tests:
+          - not_null
+      - name: rang
+        description: Rang national du prénom pour l'année et le sexe ; null si absent du fichier.
+      - name: est_publie
+        description: Vrai si l'INSEE publie une ligne pour ce prénom, ce sexe et cette année.
+        tests:
+          - not_null
+      - name: part_naissances
+        description: >
+          Part du prénom parmi les naissances recensées dans le fichier des prénoms, même année et même sexe
+          (entre 0 et 1). Légèrement surestimée, car les prénoms trop rares ne sont pas dans le fichier.
+        tests:
+          - not_null
