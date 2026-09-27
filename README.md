@@ -168,7 +168,7 @@ prenoms_france/
 - [x] Tests de qualité des données (génériques, singuliers et avertissement)
 - [x] Export JSON pour le portfolio (séries, diversité, écart régions / France, métadonnées du pipeline) et pipeline en une commande
 - [ ] Page projet du portfolio, dans un autre dépôt, à partir des fichiers JSON
-- [ ] Intégration continue (GitHub Actions), à cocher après la première exécution réussie
+- [x] Intégration continue (GitHub Actions) : pipeline complet sur Linux à chaque push
 - [x] Catalogue de données
 - [ ] Graphe de dépendances (`dbt docs`) et référentiel des régions et départements (seed)
 

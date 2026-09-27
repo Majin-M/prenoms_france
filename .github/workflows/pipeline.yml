@@ -16,7 +16,7 @@ on:
 
 jobs:
   pipeline:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04     # version figée : ubuntu-latest passe à Ubuntu 26 le 19 octobre 2026
     timeout-minutes: 20
     env:
       DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
@@ -39,7 +39,7 @@ jobs:
       # ne le télécharge que s'il est absent. La clé change si ingest.py change
       # (nouvelle URL à chaque édition annuelle).
       - name: Cache du fichier INSEE
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: data/prenoms-2025.parquet
           key: insee-${{ hashFiles('ingest.py') }}
@@ -49,7 +49,7 @@ jobs:
         run: ./run.ps1
 
       - name: Fichiers JSON exportés
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: exports
           path: exports/
@@ -57,7 +57,7 @@ jobs:
 
       - name: Journaux et résultats dbt
         if: always()        # aussi en cas d'échec, pour comprendre ce qui a cassé
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: journaux
           path: |
