@@ -1,0 +1,66 @@
+# =============================================================================
+# Pipeline complet à chaque push et pull request sur main :
+# ingestion INSEE -> dbt build (modèles + tests) -> export JSON.
+# Lance le même run.ps1 qu'en local. Les fichiers JSON produits sont
+# téléchargeables dans l'onglet Actions (artefact « exports »).
+# =============================================================================
+
+name: Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:        # lancement manuel depuis l'onglet Actions
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation de Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Installation des dépendances
+        run: pip install -r requirements.txt
+
+      # Le fichier INSEE (19 Mo) est gardé entre deux exécutions : ingest.py
+      # ne le télécharge que s'il est absent. La clé change si ingest.py change
+      # (nouvelle URL à chaque édition annuelle).
+      - name: Cache du fichier INSEE
+        uses: actions/cache@v4
+        with:
+          path: data/prenoms-2025.parquet
+          key: insee-${{ hashFiles('ingest.py') }}
+
+      - name: Pipeline (ingestion, dbt build, export)
+        shell: pwsh
+        run: ./run.ps1
+
+      - name: Fichiers JSON exportés
+        uses: actions/upload-artifact@v4
+        with:
+          name: exports
+          path: exports/
+          retention-days: 30
+
+      - name: Journaux et résultats dbt
+        if: always()        # aussi en cas d'échec, pour comprendre ce qui a cassé
+        uses: actions/upload-artifact@v4
+        with:
+          name: journaux
+          path: |
+            logs/
+            dbt/target/run_results.json
+          retention-days: 30

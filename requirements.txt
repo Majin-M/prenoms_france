@@ -1,3 +1,4 @@
-duckdb
-pytz
-dbt-duckdb
+duckdb==1.5.5
+pytz==2026.4        # pas importé directement : DuckDB en a besoin pour lire les dates avec fuseau horaire
+dbt-core==1.12.5
+dbt-duckdb==1.11.0

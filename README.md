@@ -1,5 +1,7 @@
 # Prénoms en France, 1900-2025
 
+[![Pipeline](https://github.com/Majin-M/prenoms_france/actions/workflows/pipeline.yml/badge.svg)](https://github.com/Majin-M/prenoms_france/actions/workflows/pipeline.yml)
+
 Pipeline de données construit à partir du **fichier des prénoms de l'INSEE** (édition juillet 2026) : ingestion en Python, stockage dans DuckDB, transformations et 39 tests de qualité avec dbt, export JSON pour une page de portfolio.
 
 ![Part des naissances portée par les 10 prénoms les plus donnés, 1900-2025](docs/img/part_top_10.png)
@@ -12,7 +14,7 @@ Le projet met en pratique :
 
 - une couche `raw` fidèle à la source et traçable ;
 - des transformations SQL versionnées, documentées et testées ;
-- des limites des données mesurées et écrites, plutôt que cachées ;
+- des limites des données mesurées et écrites;
 - un pipeline qui se relance en une commande.
 
 ## Démarrage rapide
@@ -24,6 +26,8 @@ pip install -r requirements.txt
 
 .\run.ps1
 ```
+
+Sous Linux ou macOS, avec PowerShell 7 : `pwsh ./run.ps1`.
 
 `run.ps1` enchaîne les trois étapes et s'arrête à la première en échec (code de sortie 1) :
 
@@ -85,7 +89,13 @@ Le détail de chaque colonne, avec son type et un exemple, est dans le [catalogu
 - **10 tests singuliers bloquants** : grain unique, effectifs multiples de 5, années continues depuis 1900, couverture de chaque zone (Mayotte à partir de 2012), cohérence des codes géographiques avec leur niveau, absence de ligne de regroupement des prénoms rares, série nationale complète, conservation des naissances entre staging et mart, somme des parts égale à 1, cohérence des indicateurs de diversité.
 - **1 avertissement** : écart entre la somme des régions et le total France.
 
-Les constats qui justifient chaque test sont détaillés dans [NOTES.md](NOTES.md). Le résumé de la dernière exécution (modèles, durées, tests par statut) est recopié dans `exports/metadata.json`, pour que le portfolio puisse l'afficher.
+Les constats qui justifient chaque test sont détaillés dans [NOTES.md](NOTES.md).
+
+### Intégration continue
+
+À chaque push et pull request sur `main`, GitHub Actions ([pipeline.yml](.github/workflows/pipeline.yml)) relance tout le pipeline sur une machine Linux, avec le vrai fichier INSEE : ingestion, `dbt build` avec les 39 tests, puis export. Un test en échec fait échouer le workflow. Les fichiers JSON produits sont téléchargeables dans l'onglet Actions (artefact `exports`), et les journaux restent disponibles même en cas d'échec.
+
+Les versions de Python et des dépendances sont figées (`requirements.txt`), pour que le résultat ne change pas d'une exécution à l'autre sans modification du code. Le résumé de la dernière exécution (modèles, durées, tests par statut) est recopié dans `exports/metadata.json`, pour que le portfolio puisse l'afficher.
 
 ## Limites des données
 
@@ -116,6 +126,8 @@ Une ligne donne le nombre de naissances pour un prénom, un sexe, une année et 
 
 ```text
 prenoms_france/
+├── .github/workflows/
+│   └── pipeline.yml           # Intégration continue : pipeline complet à chaque push
 ├── run.ps1                    # Pipeline complet : ingestion, dbt build, export
 ├── ingest.py                  # Ingestion : INSEE -> raw.prenoms
 ├── export.py                  # Export : marts -> exports/*.json
@@ -156,7 +168,7 @@ prenoms_france/
 - [x] Tests de qualité des données (génériques, singuliers et avertissement)
 - [x] Export JSON pour le portfolio (séries, diversité, écart régions / France, métadonnées du pipeline) et pipeline en une commande
 - [ ] Page projet du portfolio, dans un autre dépôt, à partir des fichiers JSON
-- [ ] Intégration continue (GitHub Actions, sur un échantillon de données)
+- [ ] Intégration continue (GitHub Actions), à cocher après la première exécution réussie
 - [x] Catalogue de données
 - [ ] Graphe de dépendances (`dbt docs`) et référentiel des régions et départements (seed)
 
