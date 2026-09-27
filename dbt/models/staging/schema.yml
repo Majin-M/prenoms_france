@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: stg_insee__prenoms
+    description: Prénoms INSEE nettoyés et typés, tous niveaux géographiques.
+    columns:
+      - name: sexe
+        description: M ou F
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["M", "F"]
+      - name: prenom
+        tests:
+          - not_null
+      - name: annee
+        description: Année de naissance, en entier (1900 à la dernière année publiée).
+        tests:
+          - not_null
+      - name: nombre_naissances
+        description: Nombre de naissances, arrondi à un multiple de 5 par l'INSEE (minimum 5).
+        tests:
+          - not_null
+      - name: niveau_geo
+        description: Niveau géographique. Une zone s'identifie par niveau_geo + geo_code.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["FRANCE", "REG", "DEP"]
+      - name: geo_code
+        description: Code de la zone, à interpréter avec niveau_geo (11 = Île-de-France en REG, Aude en DEP).
+        tests:
+          - not_null

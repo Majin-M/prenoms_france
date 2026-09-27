@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: insee
+    schema: raw
+    description: Fichier des prénoms de l'INSEE, chargé par ingest.py
+    tables:
+      - name: prenoms
+        description: Copie fidèle du Parquet INSEE, avec _loaded_at et _source_sha256
