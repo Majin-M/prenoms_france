@@ -1,0 +1,7 @@
+data/
+exports/
+dbt/target/
+dbt/logs/
+__pycache__/
+*.egg-info/
+.venv/
