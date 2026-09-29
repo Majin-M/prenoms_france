@@ -2,42 +2,9 @@
 
 [![Pipeline](https://github.com/Majin-M/prenoms_france/actions/workflows/pipeline.yml/badge.svg)](https://github.com/Majin-M/prenoms_france/actions/workflows/pipeline.yml)
 
-Pipeline de données construit à partir du **fichier des prénoms de l'INSEE** (édition juillet 2026) : ingestion en Python, stockage dans DuckDB, transformations et 39 tests de qualité avec dbt, export JSON pour une page de portfolio.
+Pipeline de données construit sur le **fichier des prénoms de l'INSEE** (édition juillet 2026, 6,6 millions de lignes) : ingestion traçable, modèle en couches dans DuckDB, 39 tests de qualité avec dbt, puis export JSON lu par le portfolio : [voir la page du projet](https://portfolio-data-lovat.vercel.app/projets/prenoms-de-france/).
 
-![Part des naissances portée par les 10 prénoms les plus donnés, 1900-2025](docs/img/part_top_10.png)
-
-**En 1900, près d'un enfant sur deux recevait l'un des 10 prénoms les plus donnés. En 2025, c'est environ un sur dix.** Marie portait à elle seule 20,6 % des naissances de filles en 1900. Chez les garçons, la concentration culmine en 1945 (50 %), puis les deux courbes se rejoignent et baissent ensemble à partir des années 1970.
-
-## Objectif
-
-Le projet met en pratique :
-
-- une couche `raw` fidèle à la source et traçable ;
-- des transformations SQL versionnées, documentées et testées ;
-- des limites des données mesurées et écrites;
-- un pipeline qui se relance en une commande.
-
-## Démarrage rapide
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-
-.\run.ps1
-```
-
-Sous Linux ou macOS, avec PowerShell 7 : `pwsh ./run.ps1`.
-
-`run.ps1` enchaîne les trois étapes et s'arrête à la première en échec (code de sortie 1) :
-
-1. `python ingest.py` télécharge le fichier INSEE s'il n'est pas déjà dans `data/`, vérifie son schéma et remplace la table `raw.prenoms`.
-2. `dbt build` crée les modèles `staging` et `marts` et lance les tests. Un test en échec bloque les modèles qui en dépendent.
-3. `python export.py` écrit les fichiers JSON dans `exports/`.
-
-Le projet s'arrête à la préparation des données : les graphiques sont dessinés par le portfolio, qui lit ces fichiers JSON (copiés dans son dossier `public/data/prenoms/`). Les données ne changent qu'une fois par an, à chaque édition de l'INSEE.
-
-Chaque script Python chronomètre ses étapes dans le terminal et dans `logs/`. Le pipeline complet prend moins de deux minutes, hors téléchargement.
+**Stack** : Python (ingestion et export), DuckDB (stockage), dbt (transformations et tests), GitHub Actions (intégration continue).
 
 ## Architecture
 
@@ -46,8 +13,6 @@ Chaque script Python chronomètre ses étapes dans le terminal et dans `logs/`. 
 ### Flux de données
 
 ![Flux de données, du fichier Parquet aux fichiers JSON](docs/img/flux_de_donnees.png)
-
-Les sources des deux schémas sont dans `docs/` (fichiers draw.io).
 
 | Couche | Rôle | Objets |
 |---|---|---|
@@ -62,7 +27,23 @@ Les sources des deux schémas sont dans `docs/` (fichiers draw.io).
 | `mart_diversite_prenoms_par_annee` | année, sexe | Nombre de prénoms, part du top 10, prénoms couvrant la moitié des naissances, nombre effectif (inverse de l'indice de Simpson) |
 | `mart_ecart_regions_france` | année | Part des naissances du total France absentes de la somme des régions |
 
-Le détail de chaque colonne, avec son type et un exemple, est dans le [catalogue de données](docs/catalogue_de_donnees.md).
+Chaque colonne est décrite dans le [catalogue de données](docs/catalogue_de_donnees.md), les règles de nommage dans les [conventions de nommage](docs/conventions_de_nommage.md). Les sources des deux schémas sont dans `docs/` (draw.io).
+
+## Ce que montrent les données
+
+![Part des naissances portée par les 10 prénoms les plus donnés, 1900-2025](docs/img/part_top_10.png)
+
+**En 1900, près d'un enfant sur deux recevait l'un des 10 prénoms les plus donnés. En 2025, c'est environ un sur dix.** Marie portait à elle seule 20,6 % des naissances de filles en 1900. Chez les garçons, la concentration culmine en 1945 (50 %), puis les deux courbes se rejoignent et baissent ensemble à partir des années 1970.
+
+## Exécution
+
+`run.ps1` enchaîne trois étapes et s'arrête à la première en échec :
+
+1. `ingest.py` télécharge le fichier INSEE, vérifie son schéma et remplace la table `raw.prenoms`.
+2. `dbt build` crée les modèles `staging` et `marts` et lance les 39 tests. Un test en échec bloque les modèles qui en dépendent.
+3. `export.py` écrit les fichiers JSON dans `exports/`, avec le résumé de l'exécution dbt (modèles, durées, tests par statut) dans `metadata.json`.
+
+À chaque push et pull request sur `main`, GitHub Actions ([pipeline.yml](.github/workflows/pipeline.yml)) rejoue tout le pipeline sur Linux avec le vrai fichier INSEE ; un test en échec fait échouer le workflow. Les versions de Python et des dépendances sont figées (`requirements.txt`). Les données ne changent qu'une fois par an, à chaque édition de l'INSEE : le portfolio garde une copie des fichiers JSON.
 
 ## Décisions techniques
 
@@ -79,7 +60,7 @@ Le détail de chaque colonne, avec son type et un exemple, est dans le [catalogu
 | **Chaque test singulier a été vu en échec** | Un test mal écrit peut passer à tous les coups. Chaque test singulier a été lancé une fois sur des données volontairement faussées (ligne en double, code géographique invalide, année manquante…) ou avec une règle modifiée (`% 5` remplacé par `% 7`), pour vérifier qu'il détecte bien le défaut. |
 | **Avertissement, et non échec, sur l'écart régions / France, au seuil de 15 %** | L'écart mesuré par année et par sexe va de 0,7 % à 11,6 %, toujours dans le même sens, ce qui exclut l'arrondi comme cause. Un seuil à 1 % aurait déclenché 226 avertissements sur 252, et un avertissement permanent n'est plus lu. |
 | **Variable dbt `derniere_annee`** | Une nouvelle édition de l'INSEE demande de changer une seule ligne. La variable permet aussi de détecter une édition incomplète, à qui il manquerait la dernière année. |
-| **Conventions de nommage écrites et appliquées** | Voir [docs/conventions_de_nommage.md](docs/conventions_de_nommage.md) : `stg_<source>__<entité>`, `mart_<sujet>`, préfixe `nombre_` pour les comptages, colonnes techniques préfixées par `_`. |
+| **Conventions de nommage écrites et appliquées** | `stg_<source>__<entité>`, `mart_<sujet>`, préfixe `nombre_` pour les comptages, colonnes techniques préfixées par `_`. |
 
 ## Qualité des données
 
@@ -91,15 +72,7 @@ Le détail de chaque colonne, avec son type et un exemple, est dans le [catalogu
 
 Les constats qui justifient chaque test sont détaillés dans [NOTES.md](NOTES.md).
 
-### Intégration continue
-
-À chaque push et pull request sur `main`, GitHub Actions ([pipeline.yml](.github/workflows/pipeline.yml)) relance tout le pipeline sur une machine Linux, avec le vrai fichier INSEE : ingestion, `dbt build` avec les 39 tests, puis export. Un test en échec fait échouer le workflow. Les fichiers JSON produits sont téléchargeables dans l'onglet Actions (artefact `exports`), et les journaux restent disponibles même en cas d'échec.
-
-Les versions de Python et des dépendances sont figées (`requirements.txt`), pour que le résultat ne change pas d'une exécution à l'autre sans modification du code. Le résumé de la dernière exécution (modèles, durées, tests par statut) est recopié dans `exports/metadata.json`, pour que le portfolio puisse l'afficher.
-
 ## Limites des données
-
-Constats de l'exploration (détails dans [NOTES.md](NOTES.md)), dont il faut tenir compte dans toute analyse :
 
 - **Toutes les naissances ne sont pas dans le fichier.** Pour 2020, le fichier compte 677 665 naissances en France, contre 735 186 selon l'INSEE : 7,8 % des naissances manquent. Les prénoms trop rares ne sont pas diffusés, et aucune ligne ne les regroupe. Une somme de naissances n'est donc pas un nombre total de naissances.
 - **Les niveaux géographiques ne s'additionnent pas.** La somme des régions est toujours inférieure au total France, et l'écart grandit avec le temps : environ 1 % dans les années 1900, jusqu'à 11,6 % pour les filles en 2024 (10,3 % tous sexes confondus). Cause probable : un prénom assez fréquent pour être publié au niveau national peut être trop rare dans chaque région pour y figurer. Pour un total national, il faut utiliser le niveau `FRANCE`, jamais une somme de régions ou de départements.
@@ -140,12 +113,7 @@ prenoms_france/
 │   └── macros/
 ├── exploration/
 │   └── explore.py             # Requêtes d'exploration du fichier source
-├── docs/
-│   ├── img/                   # Schémas et illustration du README
-│   ├── architecture.drawio    # Source du schéma d'architecture
-│   ├── flux_de_donnees.drawio # Source du schéma de flux
-│   ├── catalogue_de_donnees.md
-│   └── conventions_de_nommage.md
+├── docs/                      # Schémas (draw.io et PNG), catalogue de données, conventions de nommage
 ├── data/                      # Fichier source et base DuckDB (non versionnés)
 ├── exports/                   # Fichiers JSON pour le portfolio (non versionnés)
 ├── logs/                      # Journaux d'exécution (non versionnés)
@@ -153,29 +121,10 @@ prenoms_france/
 └── requirements.txt
 ```
 
-## Stack
-
-- **Python** pour le téléchargement, le chargement et l'export
-- **DuckDB** comme base analytique, dans un simple fichier local
-- **dbt** pour les transformations SQL et les tests
-
-## Avancement
-
-- [x] Exploration du fichier source
-- [x] Ingestion dans la couche `raw`, avec contrôle du schéma, traçabilité et journalisation
-- [x] Modèle dbt `staging`
-- [x] Marts : série nationale, diversité par année, écart régions / France
-- [x] Tests de qualité des données (génériques, singuliers et avertissement)
-- [x] Export JSON pour le portfolio (séries, diversité, écart régions / France, métadonnées du pipeline) et pipeline en une commande
-- [ ] Page projet du portfolio, dans un autre dépôt, à partir des fichiers JSON
-- [x] Intégration continue (GitHub Actions) : pipeline complet sur Linux à chaque push
-- [x] Catalogue de données
-- [ ] Graphe de dépendances (`dbt docs`) et référentiel des régions et départements (seed)
-
 ## Licence
 
 Code sous licence MIT : voir [LICENSE](LICENSE).
 
 ## À propos
 
-Je suis Steven Mouthoud, étudiant en data. Je veux devenir data engineer.
+Marc Steven Mouthoud, data engineer. Portfolio : [portfolio-data-lovat.vercel.app](https://portfolio-data-lovat.vercel.app/).

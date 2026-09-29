@@ -8,3 +8,6 @@ __pycache__/
 logs/
 dbt/.user.yml
 .vscode/
+
+# Notes de travail locales
+CLAUDE.md
